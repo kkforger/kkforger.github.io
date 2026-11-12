@@ -160,24 +160,27 @@
     .footer-links a:hover {
       color: #FFFFFF;
     }
-      .back-link {
+      .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .header-top .badge {
+      margin-bottom: 0;
+    }
+    .back-link {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 24px;
-      padding: 9px 18px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border);
-      color: #F8FAFC;
-      border-radius: 10px;
-      font-size: 13.5px;
-      font-weight: 700;
+      gap: 6px;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
       text-decoration: none;
-      transition: background 0.2s, transform 0.2s;
+      transition: color 0.2s;
     }
     .back-link:hover {
-      background: rgba(255, 255, 255, 0.12);
-      transform: translateX(-2px);
+      color: #FFFFFF;
     }
   </style>
 </head>
@@ -196,10 +199,11 @@
   </nav>
 
   <div class="container">
-    <a href="index.html" class="back-link">&larr; Back to Home</a>
-
-    <header>
-      <span class="badge">OFFICIAL TERMS OF SERVICE</span>
+        <header>
+      <div class="header-top">
+        <span class="badge">OFFICIAL TERMS OF SERVICE</span>
+        <a href="index.html" class="back-link">&larr; Back to Home</a>
+      </div>
       <h1>Terms of Service for AIO Tracker</h1>
       <div class="meta">
         <strong>App:</strong> AIO Tracker (<code>com.kkforger.apps.aiotracker</code>)<br>
