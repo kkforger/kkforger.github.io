@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="icon-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <title>Terms of Service - AIO Tracker</title>
   <style>
     :root {
@@ -20,7 +25,7 @@
       padding: 0;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--bg);
       color: var(--text);
       line-height: 1.65;
@@ -100,9 +105,77 @@
       color: var(--text-muted);
       font-size: 13px;
     }
+  
+    nav {
+      max-width: 800px;
+      margin: 0 auto 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 18px;
+      font-weight: 800;
+      color: #FFFFFF;
+      text-decoration: none;
+    }
+    .brand-img {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
+    .nav-links {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover {
+      color: #FFFFFF;
+    }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    .footer-links a:hover {
+      color: #FFFFFF;
+    }
   </style>
 </head>
 <body>
+  <nav>
+    <a href="index.html" class="brand">
+      <img src="icon-512.png" alt="AIO Tracker logo" class="brand-img">
+      AIO Tracker
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="terms.html">Terms of Service</a>
+      <a href="mailto:kkforger@gmail.com">Contact</a>
+    </div>
+  </nav>
+
   <div class="container">
     <header>
       <span class="badge">OFFICIAL TERMS OF SERVICE</span>
@@ -150,8 +223,14 @@
       <p>If you have any questions concerning these Terms of Service, please contact us at <a href="mailto:kkforger@gmail.com">kkforger@gmail.com</a>.</p>
     </section>
 
-    <footer>
-      <p>&copy; 2026 KKForger Apps. All rights reserved.</p>
+        <footer>
+      <div>&copy; 2026 KKForger Apps. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+        <a href="mailto:kkforger@gmail.com">Developer Support</a>
+      </div>
     </footer>
   </div>
 </body>
