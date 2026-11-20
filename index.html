@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KKForger Apps</title>
+  <meta name="description" content="Official site of KKForger Apps. Home of AIO Tracker and other Android apps.">
+  <link rel="icon" type="image/png" href="/aio-tracker/icon-512.png">
+  <style>
+    :root {
+      --bg: #090B10;
+      --card-bg: #131722;
+      --card-border: #1E2638;
+      --text: #F8FAFC;
+      --text-muted: #94A3B8;
+      --primary: #4F46E5;
+      --primary-light: #818CF8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+    .card {
+      max-width: 520px;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 48px 40px;
+      text-align: center;
+    }
+    .logo {
+      width: 88px;
+      height: 88px;
+      border-radius: 22px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
+    }
+    h1 { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+    .tagline { color: var(--text-muted); font-size: 15px; margin-bottom: 32px; }
+    .app {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      text-decoration: none;
+      color: var(--text);
+      transition: background 0.2s;
+    }
+    .app:hover { background: rgba(255, 255, 255, 0.07); }
+    .app img { width: 48px; height: 48px; border-radius: 12px; }
+    .app-name { font-weight: 700; font-size: 15px; }
+    .app-desc { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+    footer {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    footer a { color: var(--text-muted); font-size: 13px; text-decoration: none; }
+    footer a:hover { color: var(--primary-light); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="/aio-tracker/icon-512.png" alt="KKForger Apps logo" class="logo">
+    <h1>KKForger Apps</h1>
+    <p class="tagline">Independent Android apps, built with care.</p>
+    <a class="app" href="/aio-tracker/">
+      <img src="/aio-tracker/icon-512.png" alt="AIO Tracker icon">
+      <div>
+        <div class="app-name">AIO Tracker</div>
+        <div class="app-desc">Universal media, watchlist and habit tracker for Android</div>
+      </div>
+    </a>
+    <footer>
+      <a href="/aio-tracker/privacy.html">Privacy Policy</a>
+      <a href="/aio-tracker/terms.html">Terms of Service</a>
+      <a href="mailto:kkforger@gmail.com">Contact</a>
+    </footer>
+  </div>
+</body>
+</html>
