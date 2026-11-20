@@ -48,12 +48,12 @@
       height: auto;
       margin-bottom: 20px;
     }
-    h1 { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
     .tagline { color: var(--text-muted); font-size: 15px; margin-bottom: 32px; }
     .app {
       display: flex;
       align-items: center;
       gap: 16px;
+      text-align: left;
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--card-border);
       border-radius: 12px;
@@ -66,23 +66,11 @@
     .app img { width: 48px; height: 48px; border-radius: 12px; }
     .app-name { font-weight: 700; font-size: 15px; }
     .app-desc { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
-    footer {
-      margin-top: 32px;
-      padding-top: 24px;
-      border-top: 1px solid var(--card-border);
-      display: flex;
-      gap: 20px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    footer a { color: var(--text-muted); font-size: 13px; text-decoration: none; }
-    footer a:hover { color: var(--primary-light); }
   </style>
 </head>
 <body>
   <div class="card">
     <img src="/White_LOGO_Transparent_2000x2000_v1.png" alt="KKForger logo" class="logo">
-    <h1>KKForger Apps</h1>
     <p class="tagline">Independent Android apps, built with care.</p>
     <a class="app" href="/aio-tracker/">
       <img src="/aio-tracker/icon-512.png" alt="AIO Tracker icon">
@@ -91,11 +79,6 @@
         <div class="app-desc">Universal media, watchlist and habit tracker for Android</div>
       </div>
     </a>
-    <footer>
-      <a href="/aio-tracker/privacy.html">Privacy Policy</a>
-      <a href="/aio-tracker/terms.html">Terms of Service</a>
-      <a href="mailto:kkforger@gmail.com">Contact</a>
-    </footer>
   </div>
 </body>
 </html>
