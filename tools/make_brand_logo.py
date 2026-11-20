@@ -1,17 +1,11 @@
 """Render the KKForger brand logo purely from code (PIL).
 
-Same conventions as the AIO Tracker branding script: every pixel is drawn
-deterministically, supersampled 4x and downscaled with LANCZOS. No AI
-imagery, no external sources.
-
-Design: "forge" identity for the developer brand.
-  - charcoal slate tile (diagonal gradient), distinct from the app's violet
-  - white "KK" monogram in Manrope ExtraBold with a metallic sheen
-  - amber 4-point forge spark with glow, striking off the monogram's top-right
+Forged-steel style, deterministic: stone-textured charcoal tile, molten
+"KK" monogram with bevel edge, anvil silhouette, hammer with a glowing
+striking face, sparks, and a forged-steel "KK FORGER" wordmark baked in.
 
 Outputs (repo root):
   brand_logo.png       512x512 RGBA tile (site root page, favicon)
-  brand_wordmark.png   horizontal lockup, transparent (future use)
 
 Usage:
   python tools/make_brand_logo.py
@@ -19,6 +13,7 @@ Usage:
 
 from __future__ import annotations
 
+import random
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -28,13 +23,7 @@ APP_FONTS = Path(r"D:\OpenCode\AIO\04_projects\aio_tracker\assets\fonts")
 MANROPE = APP_FONTS / "Manrope.ttf"
 
 # ---------------------------------------------------------------- palette --
-SLATE_HI = (30, 38, 54)      # #1E2636 tile gradient top-left
-SLATE_LO = (11, 14, 22)      # #0B0E16 tile gradient bottom-right
 WHITE = (255, 255, 255)
-SHEEN = (199, 210, 254)      # #C7D2FE metallic cool sheen
-AMBER = (245, 158, 11)       # #F59E0B forge spark
-ORANGE = (249, 115, 22)      # #F97316 molten core
-SHADOW_INK = (4, 6, 12)
 
 
 def _font(path: Path, size: int, variation: str | None = None) -> ImageFont.FreeTypeFont:
@@ -77,25 +66,90 @@ def diagonal_gradient(size, stops) -> Image.Image:
     return Image.blend(horiz, vert, 0.5)
 
 
-def _vertical_gradient_overlay(mask: Image.Image, stops) -> Image.Image:
-    """Gradient image clipped to the alpha of `mask` (L mask or RGBA image)."""
-    w, h = mask.size
-    grad = _axis_gradient(h, stops).transpose(Image.ROTATE_90).resize((w, h)).convert("RGBA")
-    alpha = mask.getchannel("A") if mask.mode == "RGBA" else mask
-    grad.putalpha(alpha)
-    return grad
+def _fill_shape(shape_mask: Image.Image, stops) -> Image.Image:
+    """Fill a shape's bbox with a vertical gradient, clipped to the shape."""
+    x0, y0, x1, y1 = shape_mask.getbbox()
+    grad = _axis_gradient(y1 - y0, stops).transpose(Image.ROTATE_90).resize((x1 - x0, y1 - y0)).convert("RGBA")
+    out = Image.new("RGBA", shape_mask.size, (0, 0, 0, 0))
+    out.paste(grad, (x0, y0))
+    out.putalpha(shape_mask)
+    return out
 
 
 def _spark_points(cx: float, cy: float, r: float, q: float):
-    """4-point sparkle polygon: N/E/S/W tips with concave waist points."""
     return [
         (cx, cy - r), (cx + q, cy - q), (cx + r, cy), (cx + q, cy + q),
         (cx, cy + r), (cx - q, cy + q), (cx - r, cy), (cx - q, cy - q),
     ]
 
 
+def _composite_clipped(img: Image.Image, layer: Image.Image, tile_mask: Image.Image):
+    img.alpha_composite(
+        Image.composite(layer, Image.new("RGBA", img.size, (0, 0, 0, 0)), tile_mask)
+    )
+
+
+SPARK_STOPS = [(0.0, (255, 214, 120)), (0.45, (245, 158, 11)), (1.0, (249, 115, 22))]
+
+
+def _draw_spark(img, S, tile_mask, s, cx, cy, r, glow_alpha, blur):
+    glow = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    ImageDraw.Draw(glow).polygon(
+        _spark_points(cx, cy, r * 1.9, r * 0.24 * 1.9), fill=(245, 158, 11, glow_alpha)
+    )
+    glow = glow.filter(ImageFilter.GaussianBlur(s(blur)))
+    _composite_clipped(img, glow, tile_mask)
+    mask = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(mask).polygon(_spark_points(cx, cy, r, r * 0.24), fill=255)
+    img.alpha_composite(_fill_shape(mask, SPARK_STOPS))
+
+
+# ------------------------------------------------------------- textures ----
+def _stone_texture(S: int, s, radius: int) -> Image.Image:
+    """Deterministic mottled stone speckle, clipped to the tile."""
+    rng = random.Random(42)
+    tex = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(tex)
+    shades = [(16, 18, 26), (26, 30, 42), (44, 50, 66), (10, 12, 18)]
+    for _ in range(260):
+        x, y = rng.uniform(0, S), rng.uniform(0, S)
+        r = rng.uniform(s(2), s(11))
+        shade = shades[rng.randrange(4)]
+        d.ellipse((x - r, y - r, x + r, y + r), fill=shade + (rng.randint(22, 64),))
+    for _ in range(46):
+        x, y = rng.uniform(0, S), rng.uniform(0, S)
+        r = rng.uniform(s(1), s(3.4))
+        warm = rng.random() < 0.65
+        col = (249, 115, 22, rng.randint(28, 85)) if warm else (196, 84, 24, rng.randint(18, 55))
+        d.ellipse((x - r, y - r, x + r, y + r), fill=col)
+    mask = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, S, S), radius=radius, fill=255)
+    tex.putalpha(Image.composite(tex.getchannel("A"), Image.new("L", (S, S), 0), mask))
+    return tex
+
+
+def _vignette(S: int, s, radius: int) -> Image.Image:
+    """Soft darkening toward the tile edges."""
+    vig = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(vig).rounded_rectangle(
+        (s(28), s(28), S - s(28), S - s(28)), radius=max(1, radius - s(28)),
+        outline=255, width=s(64),
+    )
+    vig = vig.filter(ImageFilter.GaussianBlur(s(46)))
+    dark = Image.new("RGBA", (S, S), (5, 7, 12, 0))
+    dark.putalpha(vig.point(lambda a: min(255, a * 220 // 255)))
+    return dark
+
+
 # ------------------------------------------------------------------- icon --
-def render_brand_icon(size: int = 512, ss: int = 4, margin: int = 16) -> Image.Image:
+ANVIL = [
+    (96, 318), (140, 300), (372, 300), (372, 330), (344, 338), (330, 356),
+    (352, 372), (352, 392), (166, 392), (166, 372), (188, 356), (176, 338),
+    (140, 330),
+]
+
+
+def render_brand_icon(size: int = 512, ss: int = 4, margin: int = 0) -> Image.Image:
     S = size * ss
     k = S / 512.0
     s = lambda v: int(round(v * k))
@@ -104,115 +158,123 @@ def render_brand_icon(size: int = 512, ss: int = 4, margin: int = 16) -> Image.I
 
     # -- charcoal tile -------------------------------------------------
     tile_r = s(110)
-    grad = diagonal_gradient((S, S), [(0.0, SLATE_HI), (1.0, SLATE_LO)]).convert("RGBA")
+    grad = diagonal_gradient((S, S), [(0.0, (34, 40, 56)), (1.0, (13, 16, 26))]).convert("RGBA")
     tile_mask = Image.new("L", (S, S), 0)
-    ImageDraw.Draw(tile_mask).rounded_rectangle(
-        (s(margin), s(margin), S - s(margin), S - s(margin)), radius=tile_r, fill=255
-    )
+    ImageDraw.Draw(tile_mask).rounded_rectangle((0, 0, S, S), radius=tile_r, fill=255)
     grad.putalpha(tile_mask)
     img.alpha_composite(grad)
 
-    # -- faint forge glow behind the monogram (warm ember, very subtle) -
-    ember = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    ed = ImageDraw.Draw(ember)
-    ed.ellipse(
-        (s(150), s(150), s(392), s(392)),
-        fill=(249, 115, 22, 26),
-    )
-    ember = ember.filter(ImageFilter.GaussianBlur(s(46)))
-    ember.putalpha(
-        Image.composite(
-            ember.getchannel("A").point(lambda a: int(a * 0.9)),
-            Image.new("L", (S, S), 0),
-            tile_mask,
-        )
-    )
-    img.alpha_composite(ember)
+    # -- stone texture + vignette ---------------------------------------
+    img.alpha_composite(_stone_texture(S, s, tile_r))
+    img.alpha_composite(_vignette(S, s, tile_r))
 
-    # -- "KK" monogram with metallic sheen -----------------------------
-    mono = Image.new("L", (S, S), 0)
-    md = ImageDraw.Draw(mono)
-    font = _font(MANROPE, s(238), variation="ExtraBold")
-    text = "KK"
-    bbox = md.textbbox((0, 0), text, font=font)
-    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    # optical centering (monogram sits a touch high of true center)
-    tx = (S - tw) / 2 - bbox[0]
-    ty = (S - th) / 2 - bbox[1] + s(6)
-    md.text((tx, ty), text, font=font, fill=255)
-
-    # soft drop shadow for depth
-    shadow = mono.filter(ImageFilter.GaussianBlur(s(7)))
-    shadow_img = Image.new("RGBA", (S, S), SHADOW_INK + (0,))
-    shadow_img.putalpha(shadow.point(lambda a: int(a * 0.55)))
-    img.alpha_composite(Image.composite(shadow_img, Image.new("RGBA", (S, S), (0, 0, 0, 0)), tile_mask))
-
-    # sheen: white at top fading to cool mist at the bottom
-    sheen_stops = [(0.0, WHITE), (0.55, WHITE), (1.0, SHEEN)]
-    img.alpha_composite(_vertical_gradient_overlay(mono, sheen_stops))
-
-    # -- amber forge spark, top-right of the monogram -------------------
-    scx, scy, sr = s(368), s(138), s(64)
-    sq = sr * 0.24
-
-    # glow layer
+    # -- ember glow behind the monogram ---------------------------------
     glow = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     gd = ImageDraw.Draw(glow)
-    gd.polygon(_spark_points(scx, scy, sr * 1.9, sq * 1.9), fill=(245, 158, 11, 90))
-    glow = glow.filter(ImageFilter.GaussianBlur(s(18)))
-    img.alpha_composite(Image.composite(glow, Image.new("RGBA", (S, S), (0, 0, 0, 0)), tile_mask))
+    for rad, a in [(s(190), 70), (s(120), 90)]:
+        gd.ellipse((s(256) - rad, s(265) - rad, s(256) + rad, s(265) + rad), fill=(240, 100, 20, a))
+    glow = glow.filter(ImageFilter.GaussianBlur(s(40)))
+    _composite_clipped(img, glow, tile_mask)
 
-    # molten core: gradient-filled spark (amber -> orange top to bottom)
-    spark_mask = Image.new("L", (S, S), 0)
-    ImageDraw.Draw(spark_mask).polygon(_spark_points(scx, scy, sr, sq), fill=255)
-    core_stops = [(0.0, (255, 214, 120)), (0.45, AMBER), (1.0, ORANGE)]
-    img.alpha_composite(_vertical_gradient_overlay(spark_mask, core_stops))
+    # -- anvil behind the letters ---------------------------------------
+    anvil_mask = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(anvil_mask).polygon([(s(x), s(y)) for x, y in ANVIL], fill=255)
+    img.alpha_composite(_fill_shape(anvil_mask, [(0.0, (60, 66, 84)), (1.0, (12, 14, 20))]))
 
-    # tiny companion spark, lower-left of the monogram
-    scx2, scy2, sr2 = s(136), s(376), s(26)
-    glow2 = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    ImageDraw.Draw(glow2).polygon(_spark_points(scx2, scy2, sr2 * 1.9, sr2 * 0.24 * 1.9), fill=(245, 158, 11, 70))
-    glow2 = glow2.filter(ImageFilter.GaussianBlur(s(8)))
-    img.alpha_composite(Image.composite(glow2, Image.new("RGBA", (S, S), (0, 0, 0, 0)), tile_mask))
-    mask2 = Image.new("L", (S, S), 0)
-    ImageDraw.Draw(mask2).polygon(_spark_points(scx2, scy2, sr2, sr2 * 0.24), fill=255)
-    img.alpha_composite(_vertical_gradient_overlay(mask2, core_stops))
+    # -- "KK" monogram: bevel edge + fire gradient ----------------------
+    font = _font(MANROPE, s(198), variation="ExtraBold")
+    probe = ImageDraw.Draw(Image.new("L", (8, 8)))
+    bbox = probe.textbbox((0, 0), "KK", font=font)
+    tw = bbox[2] - bbox[0]
+    tx = (S - tw) / 2 - bbox[0]
+    ty = s(148) - bbox[1]
+
+    mono = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(mono).text((tx, ty), "KK", font=font, fill=255)
+
+    # drop shadow
+    shadow = mono.filter(ImageFilter.GaussianBlur(s(6)))
+    sh = Image.new("RGBA", (S, S), (6, 8, 14, 0))
+    sh.putalpha(shadow.point(lambda a: a * 3 // 4))
+    _composite_clipped(img, sh, tile_mask)
+
+    # bevel ring: dilated text in dark steel
+    bevel = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    bdraw = ImageDraw.Draw(bevel)
+    off = s(5)
+    for dx, dy in [(off, 0), (0, off), (off, off), (-off, 0), (0, -off), (-off, -off), (off, -off), (-off, off)]:
+        bdraw.text((tx + dx, ty + dy), "KK", font=font, fill=(24, 27, 38, 255))
+    _composite_clipped(img, bevel, tile_mask)
+
+    # fire gradient: molten bright at the bottom, dark steel at the top
+    img.alpha_composite(_fill_shape(mono, [
+        (0.0, (255, 205, 110)),
+        (0.35, (242, 122, 28)),
+        (0.62, (176, 56, 18)),
+        (1.0, (84, 32, 14)),
+    ]))
+
+    # molten core hotspot brightening the middle of the letters
+    core = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    ImageDraw.Draw(core).ellipse((s(150), s(210), s(362), s(300)), fill=(255, 190, 90, 120))
+    core = core.filter(ImageFilter.GaussianBlur(s(30)))
+    _composite_clipped(img, Image.composite(core, Image.new("RGBA", (S, S), (0, 0, 0, 0)), mono), tile_mask)
+
+    # -- hammer, top-right, rotated -------------------------------------
+    hammer = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    hd = ImageDraw.Draw(hammer)
+    hd.rounded_rectangle((s(96), s(84), s(330), s(108)), radius=s(12), fill=(52, 42, 32, 255))
+    hd.rounded_rectangle((s(96), s(84), s(330), s(94)), radius=s(4), fill=(80, 66, 48, 255))
+    hd.rounded_rectangle((s(306), s(22), s(404), s(170)), radius=s(18), fill=(40, 44, 58, 255))
+    hd.rounded_rectangle((s(306), s(146), s(404), s(170)), radius=s(18), fill=(255, 150, 46, 255))
+    hglow = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    ImageDraw.Draw(hglow).ellipse((s(280), s(110), s(440), s(240)), fill=(255, 140, 40, 90))
+    hglow = hglow.filter(ImageFilter.GaussianBlur(s(26)))
+    hammer.alpha_composite(hglow)
+    hammer = hammer.rotate(-32, expand=True, resample=Image.BICUBIC)
+    hl = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    hl.alpha_composite(hammer, ((S - hammer.width) // 2 + s(150), -s(10)))
+    _composite_clipped(img, hl, tile_mask)
+
+    # -- sparks ----------------------------------------------------------
+    rng = random.Random(7)
+    for _ in range(14):
+        x = rng.uniform(s(90), s(430))
+        y = rng.uniform(s(60), s(330))
+        r = rng.uniform(s(1.5), s(4))
+        dot = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        ImageDraw.Draw(dot).ellipse((x - r, y - r, x + r, y + r), fill=(255, 190, 90, rng.randint(90, 200)))
+        _composite_clipped(img, dot, tile_mask)
+    _draw_spark(img, S, tile_mask, s, s(120), s(160), s(16), 130, 10)
+    _draw_spark(img, S, tile_mask, s, s(410), s(230), s(13), 110, 9)
+
+    # -- "KK FORGER" wordmark, forged steel ------------------------------
+    font_t = _font(MANROPE, s(60), variation="ExtraBold")
+    tb = probe.textbbox((0, 0), "KK FORGER", font=font_t)
+    ttx = (S - (tb[2] - tb[0])) / 2 - tb[0]
+    tty = s(412) - tb[1]
+
+    tsh = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    ImageDraw.Draw(tsh).text((ttx + s(4), tty + s(5)), "KK FORGER", font=font_t, fill=(8, 9, 14, 230))
+    _composite_clipped(img, tsh, tile_mask)
+
+    tout = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    td = ImageDraw.Draw(tout)
+    o = s(3)
+    for dx, dy in [(o, 0), (0, o), (o, o), (-o, 0), (0, -o), (-o, -o), (o, -o), (-o, o)]:
+        td.text((ttx + dx, tty + dy), "KK FORGER", font=font_t, fill=(16, 18, 26, 255))
+    _composite_clipped(img, tout, tile_mask)
+
+    tmask = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(tmask).text((ttx, tty), "KK FORGER", font=font_t, fill=255)
+    img.alpha_composite(_fill_shape(tmask, [
+        (0.0, (208, 216, 232)),
+        (0.55, (140, 148, 168)),
+        (1.0, (72, 80, 100)),
+    ]))
 
     # downscale
     return img.resize((size, size), Image.LANCZOS)
-
-
-# --------------------------------------------------------------- wordmark --
-def render_wordmark(height: int = 128, ss: int = 4) -> Image.Image:
-    """Horizontal lockup: brand glyph + 'KKForger' + 'APPS' kicker."""
-    S = height * ss
-    k = S / 128.0
-    s = lambda v: int(round(v * k))
-
-    icon = render_brand_icon(size=S, ss=1, margin=12)
-
-    font_main = _font(MANROPE, s(58), variation="ExtraBold")
-    font_kick = _font(MANROPE, s(21), variation="Bold")
-
-    probe = Image.new("RGBA", (10, 10))
-    pd = ImageDraw.Draw(probe)
-    b1 = pd.textbbox((0, 0), "KKForger", font=font_main)
-    b2 = pd.textbbox((0, 0), "APPS", font=font_kick)
-    tw = int(b1[2] - b1[0]) + s(28) + icon.width + s(36)
-    th = S
-
-    img = Image.new("RGBA", (tw, th), (0, 0, 0, 0))
-    img.alpha_composite(icon, (0, 0))
-
-    d = ImageDraw.Draw(img)
-    # text baseline: vertically centered against the icon
-    main_y = (th - (b1[3] - b1[1])) / 2 - b1[1]
-    d.text((icon.width + s(28), main_y), "KKForger", font=font_main, fill=WHITE)
-    # kicker under the name, right-aligned to the name's end
-    kick_x = tw - (b2[2] - b2[0]) - s(2)
-    kick_y = main_y + (b1[3] - b1[1]) + s(10)
-    d.text((kick_x, kick_y), "APPS", font=font_kick, fill=(148, 163, 184))
-    return img
 
 
 # -------------------------------------------------------------------- main --
@@ -221,6 +283,8 @@ if __name__ == "__main__":
     icon.save(ROOT / "brand_logo.png")
     print("wrote brand_logo.png", icon.size)
 
-    mark = render_wordmark()
-    mark.save(ROOT / "brand_wordmark.png")
-    print("wrote brand_wordmark.png", mark.size)
+    # dark-background preview for inspection
+    bg = Image.new("RGBA", icon.size, (9, 11, 16, 255))
+    bg.alpha_composite(icon)
+    bg.convert("RGB").save(ROOT / "brand_logo_preview.png")
+    print("wrote brand_logo_preview.png")
